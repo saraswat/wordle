@@ -1,3 +1,4 @@
+% Taken from https://github.com/tabatkins/wordle-list
 word("women").
 word("nikau").
 word("swack").
