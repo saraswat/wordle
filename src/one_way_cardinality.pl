@@ -1,3 +1,5 @@
+% (c) Vijay Saraswat 2022
+
 :- use_module(library(clpfd)).
 
 at_least(1, V, [A1, A2, A3, A4, A5]):-

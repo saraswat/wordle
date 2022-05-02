@@ -1,3 +1,5 @@
+% (c) Vijay Saraswat 2022
+
 item(A, [B|C], C):-
     A = B.
 item(A, [B|C], [B|D]):-
