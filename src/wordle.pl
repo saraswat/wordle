@@ -34,21 +34,6 @@ play(Guess, Hidden, Words, History) :-
     score(Guess, Hidden, Score),
     play_with_word([Guess-Score], Hidden, Words, History).
 
-/*
-Alternative strategy, without using assert. Uses
-successive deepening, recreating the whole problem afresh
-with each new guessed word. This is slow.
-
-play_with_word(GS, Hidden, Words, History):- 
-    wordle(A, Words, GS),
-    score(A, Hidden, Score),
-    append(GS, [A-Score], H),
-    (Score=ggggg ->
-	 History = H;
-     Score \= ggggg,
-     play_with_word(H, Hidden, Words, History)).
-*/
-
 play_with_word([Guess-Score], Hidden, Words, History):-
     wordle_word(Words, X),
     play_with_word(X, Guess, Score, Hidden, Words, History).
@@ -62,13 +47,70 @@ play_with_word(X, Guess, Score, Hidden, Words, [Guess-Score|History]):-
     play_with_word(X, Word, Score1, Hidden, Words, History).
 
 % Guess a word consistent with current constraints, using labeling.
-% TODO: Do a better job of selecting the next word than choosing an arbitrary
-% feasible value.
-
+% This is being developed further. Below are three heuristics.
 guess_word(X, Word):-
+    next1(X, Word).
+
+% Select a random word (satisfying all constraints).
+next0(X, Word):- 
     setof(X, once(labeling([enum, ffc, down], X)), [W]),
     atom_codes(Word, W).
-    
+
+random_select(N, Candidates, Guesses):-
+    length(Candidates, L),
+    random_select(1, N, L, Candidates, Guesses).
+
+random_select(K, N, _L, _C, []):-
+    K > N.
+random_select(K, N, L, Candidates, [G | Guesses]):-
+    K =< N,
+    random(0, L, R),
+    nth0(R, Candidates, G),
+    K1 is K+1,
+    random_select(K1, N, L, Candidates, Guesses).
+
+% Select the word which has most possible scores -- the idea is that
+% all the available candidate words have more buckets to spread themselves
+% into, hence the size of the largest bucket is going to be smaller.
+next1(X, Word):-
+    setof(X, label(X), Candidates), % Collect all possible answers
+    random_select(10, Candidates, Guesses), 
+    setof(M1-G, Gl^G^(member(Gl, Guesses),
+		     atom_codes(G, Gl),
+		     setof(S, Hl^H^(member(Hl, Candidates),
+				    atom_codes(H, Hl), 
+				    score(G, H, S)),
+			   Ss), % valid scores
+		     length(Ss, M),
+		     M1 is -M),  % We want to take max.
+	  Guesses2),
+    sort(Guesses2, [U-Word | _]),
+    U1 is -U,
+    print(choice(Word, U1)), nl.
+
+%% Explicitly look for the word which is such that it has the smallest size
+%% (among all candidate words) for its largest bucket.
+
+next2(X, Word):-
+    setof(X, label(X), Candidates), % Collect all possible answers
+    random_select(2, Candidates, Guesses), 
+    setof(Max-G, Gl^G^(member(Gl, Guesses),
+		  atom_codes(G, Gl),
+		  setof(S, Hl^H^(member(Hl, Candidates),
+				 atom_codes(H, Hl), 
+				 score(G, H, S)),
+			Ss), % valid scores
+		  % L is the number of solutions when extending current
+		  % state with G with score Score, across all possible scores.
+		  setof(L, Score^X2^(member(Score, Ss),
+				     setof(X, (constraint(X, G, Score), label(X)), X2),
+				     length(X2, L)),
+			Ls),
+		   print(before_max_list(G, Ls)),
+		   max_list(Ls, Max)),
+	  Guesses2),
+    sort(Guesses2, [_-Word | _]).
+
 all_words(Words):-
     setof(Y, W^(word(W), string_codes(W, Y)), Words).
 
@@ -195,11 +237,12 @@ g_to_y([D|A], [D|B]):- char_code(d, D), g_to_y(A, B).
 score(Guess, Hidden, Score):-
     atom_codes(Guess, Gl),
     atom_codes(Hidden, Hl),
-    
-    non_green(Gl, Hl, NonGreen),
-    score2(Gl, Hl, NonGreen, Sl),
+    score1(Gl, Hl, Sl), 
     atom_codes(Score, Sl).
 
+score1(Gl, Hl, Sl):-
+    non_green(Gl, Hl, NonGreen),
+    score2(Gl, Hl, NonGreen, Sl).
 
 /*
   non_green(Guess, Hidden, NonGreen):-
