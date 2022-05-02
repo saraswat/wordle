@@ -39,20 +39,20 @@ play_with_word([Guess-Score], Hidden, Words, History):-
     play_with_word(X, Guess, Score, Hidden, Words, History).
 
 play_with_word(_X, Guess, ggggg, _Hidden, _Words, [Guess-gggg]).
-play_with_word(X, Guess, Score, Hidden, Words, [Guess-Score|History]):-
+play_with_word(X, Guess, Score, Hidden, Words, [Guess-Score-Size-NBuckets|History]):-
     Score \= ggggg,
     constraint(X, Guess, Score),
-    guess_word(X, Word),
+    guess_word(X, Word, Size, NBuckets),
     score(Word, Hidden, Score1),
     play_with_word(X, Word, Score1, Hidden, Words, History).
 
 % Guess a word consistent with current constraints, using labeling.
 % This is being developed further. Below are three heuristics.
-guess_word(X, Word):-
-    next1(X, Word).
+guess_word(X, Word, Size, NBuckets):-
+    next1(X, Word, Size, NBuckets).
 
 % Select a random word (satisfying all constraints).
-next0(X, Word):- 
+next0(X, Word, na, na):- 
     setof(X, once(labeling([enum, ffc, down], X)), [W]),
     atom_codes(Word, W).
 
@@ -72,8 +72,9 @@ random_select(K, N, L, Candidates, [G | Guesses]):-
 % Select the word which has most possible scores -- the idea is that
 % all the available candidate words have more buckets to spread themselves
 % into, hence the size of the largest bucket is going to be smaller.
-next1(X, Word):-
+next1(X, Word, Size, NBuckets):-
     setof(X, label(X), Candidates), % Collect all possible answers
+    length(Candidates, Size),
     random_select(10, Candidates, Guesses), 
     setof(M1-G, Gl^G^(member(Gl, Guesses),
 		     atom_codes(G, Gl),
@@ -84,14 +85,16 @@ next1(X, Word):-
 		     length(Ss, M),
 		     M1 is -M),  % We want to take max.
 	  Guesses2),
-    sort(Guesses2, [_-Word | _]).
+    sort(Guesses2, [NBuckets1-Word | _]),
+    NBuckets is -NBuckets1.
 
 
 %% Explicitly look for the word which is such that it has the smallest size
 %% (among all candidate words) for its largest bucket.
 
-next2(X, Word):-
+next2(X, Word, Size, SizeOfBiggestBucket):-
     setof(X, label(X), Candidates), % Collect all possible answers
+    length(Candidates, Size),
     random_select(2, Candidates, Guesses), 
     setof(Max-G, Gl^G^(member(Gl, Guesses),
 		  atom_codes(G, Gl),
@@ -108,7 +111,8 @@ next2(X, Word):-
 		   print(before_max_list(G, Ls)),
 		   max_list(Ls, Max)),
 	  Guesses2),
-    sort(Guesses2, [_-Word | _]).
+    sort(Guesses2, [U1-Word | _]),
+    SizeOfBiggestBucket is -U1.
 
 all_words(Words):-
     setof(Y, W^(word(W), string_codes(W, Y)), Words).
