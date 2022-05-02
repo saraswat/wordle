@@ -84,9 +84,8 @@ next1(X, Word):-
 		     length(Ss, M),
 		     M1 is -M),  % We want to take max.
 	  Guesses2),
-    sort(Guesses2, [U-Word | _]),
-    U1 is -U,
-    print(choice(Word, U1)), nl.
+    sort(Guesses2, [_-Word | _]).
+
 
 %% Explicitly look for the word which is such that it has the smallest size
 %% (among all candidate words) for its largest bucket.
