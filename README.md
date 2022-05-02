@@ -27,4 +27,4 @@ L = [buoys-gyydd-12-3, bijou-gddyy-10-6, bogue-ggdyd-4-4, bourd-gggdg-1-1, bound
 
 ?- 
 ```
-
+The first example is read thus. Starting with `irate`, it guessed `lemma`, `spean` and then got to the hidden word (`ahead`). The first guess (`irate`) resulted in only 497 candidates (given the score `ddydy`). The word chosen next (`lemma`) had 33 possible buckets (i.e. different scores, when rated against all the remaining words). This word was able to reduce the candidate set to size 223. Next choice `spean` was able to reduce the candidate set to just 2, and then `aheap` was the answer.
