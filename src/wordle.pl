@@ -62,22 +62,12 @@ play_with_word(X, Guess, Score, Hidden, Words, [Guess-Score|History]):-
     play_with_word(X, Word, Score1, Hidden, Words, History).
 
 % Guess a word consistent with current constraints, using labeling.
-% Undo the additional constraints introduced by labeling by backtracking.
-% Use assert/retract to record the word.
-
 % TODO: Do a better job of selecting the next word than choosing an arbitrary
 % feasible value.
 
 guess_word(X, Word):-
-    labeling([enum,ffc, down], X),
-    % label(X),
-    atom_codes(Word, X),
-    assert(guessed_word(Word)),
-    fail.
-
-guess_word(_X, Word):-
-    guessed_word(Word),
-    retractall(guessed_word(_)).
+    setof(X, once(labeling([enum, ffc, down], X)), [W]),
+    atom_codes(Word, W).
     
 all_words(Words):-
     setof(Y, W^(word(W), string_codes(W, Y)), Words).
@@ -91,6 +81,9 @@ wordle_word(Words, X):-
 wordle(A, GS):-
    A ranges over all atoms that are consistent with the guess-scores in GS. 
 */
+wordle(A, GuessScores):-
+    all_words(Words),
+    wordle(A, Words, GuessScores).
 
 wordle(A, Words, GuessScores):-
     wordle_word(Words, X),
